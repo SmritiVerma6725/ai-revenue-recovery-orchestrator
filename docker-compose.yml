@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: ai-revenue-recovery
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+    restart: unless-stopped
