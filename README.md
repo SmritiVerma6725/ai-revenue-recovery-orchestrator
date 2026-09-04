@@ -55,7 +55,7 @@ We resolved it by separating the layers: enable WSL2 and Docker Desktop integrat
 - `docker-compose.yml` - local API service on port 8000
 - `requirements.txt` - pinned Python dependencies
 - `.env.example` - safe configuration template
-- `DEMO.md` - exact Linux/Ubuntu setup and demo commands
+- `run_pipeline.md` - exact Linux/Ubuntu setup and demo commands
 - `ai-revenue-recovery-pipeline.tar.gz` - portable source package
 - `.gitignore` and `.dockerignore` - secret and generated-file protection
 
