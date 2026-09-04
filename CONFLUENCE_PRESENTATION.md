@@ -80,7 +80,8 @@ graph TD
 
     A_SIG ==> R1
 ```
-#Orchestration Explained (backend/services/razorpay_service.py)
+##3.Orchestration Explained (backend/services/razorpay_service.py)
+
 The RazorpayService module serves as the execution adapter. It connects the orchestrator's decisions to live Razorpay endpoints or fallback local simulations.
 
 ```mermaid
