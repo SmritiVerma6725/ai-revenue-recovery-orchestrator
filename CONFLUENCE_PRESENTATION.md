@@ -6,8 +6,6 @@
 **Team demo:** AI Revenue Recovery Orchestrator  
 **Current demo mode:** Synthetic transactions, simulated recovery, Dockerized local deployment
 
-> This document is a Confluence-style presentation draft. It is written for review first. Nothing in this document has been pushed as part of this edit.
-
 ---
 
 ## 1. Executive Summary
