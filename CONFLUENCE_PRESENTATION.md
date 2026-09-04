@@ -79,5 +79,65 @@ graph TD
     C_SIG --> I1
 
     A_SIG ==> R1
+```
+#Orchestration Explained (backend/services/razorpay_service.py)
+The RazorpayService module serves as the execution adapter. It connects the orchestrator's decisions to live Razorpay endpoints or fallback local simulations.
+
+```mermaid
+graph TD
+    %% Styling Definitions
+    classDef adapter fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    classDef live fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#a7f3d0;
+    classDef mock fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef action fill:#1e293b,stroke:#64748b,stroke-width:1px,color:#cbd5e1;
+    classDef webhook fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#ede9fe;
+
+    %% INITIATION & ADAPTER DUAL-MODE LOGIC
+    subgraph INIT ["1. DUAL-MODE INITIALIZATION LAYER"]
+        Start["<b>RazorpayService.__init__()</b><br>Check Environment Settings"]:::adapter
+        CheckKeys{"Keys Present?<br>(KEY_ID & KEY_SECRET)"}:::adapter
+        
+        LiveClient["<b>LIVE MODE ACTIVATED</b><br>Initializes official razorpay.Client<br>Executes real API requests"]:::live
+        MockClient["<b>SIMULATION MODE ACTIVATED</b><br>Sets client = None<br>Prevents crashes & returns mock payloads"]:::mock
+
+        Start --> CheckKeys
+        CheckKeys -- "Yes" --> LiveClient
+        CheckKeys -- "No / Missing" --> MockClient
+    end
+
+    %% INTERVENTION EXECUTIONS
+    subgraph ACTIONS ["2. INTERVENTION ORCHESTRATION LAYER"]
+        direction TB
+
+        subgraph ACT_1 ["retry_payment(transaction_id)"]
+            A1["<b>Goal:</b> Gateway & Issuer Failures<br><b>Flow:</b> Fetches payment status via client<br><b>Output:</b> Schedules background retry window"]:::action
+        end
+
+        subgraph ACT_2 ["send_payment_link(transaction_id, amount)"]
+            A2["<b>Goal:</b> Checkout & Cart Drop-offs<br><b>Flow:</b> Converts INR to paise (amount * 100) & calls payment_link.create()<br><b>Output:</b> Returns 1-click payment link URL"]:::action
+        end
+
+        subgraph ACT_3 ["send_reminder(transaction_id)"]
+            A3["<b>Goal:</b> Soft Decline Nudges<br><b>Flow:</b> Triggers SMS / WhatsApp nudge<br><b>Output:</b> Dispatches reminder status"]:::action
+        end
+
+        subgraph ACT_4 ["escalate_human(transaction_id)"]
+            A4["<b>Goal:</b> Policy Guardrails / High Value<br><b>Flow:</b> Flags case for human review<br><b>Output:</b> Bypasses automation to FinOps"]:::action
+        end
+    end
+
+    %% WEBHOOK FEEDBACK LOOP
+    subgraph WEBHOOK ["3. ASYNCHRONOUS FEEDBACK LAYER"]
+        W1["<b>verify_webhook(payload, signature)</b><br>• Uses HMAC SHA-256 (hmac.compare_digest)<br>• Authenticates incoming events (e.g., payment.captured)<br>• Triggers immediate termination of active recovery cases"]:::webhook
+    end
+
+    %% Mappings
+    LiveClient --> ACTIONS
+    MockClient --> ACTIONS
+
+    ACT_1 --> WEBHOOK
+    ACT_2 --> WEBHOOK
+    ACT_3 --> WEBHOOK
+    ACT_4 --> WEBHOOK
     B_SIG ==> R2
     C_SIG ==> R3
