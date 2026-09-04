@@ -5,9 +5,9 @@
 
 ---
 
-## The Real Business Problem
+## 1. Executive Summary & Problem Overview
 
-For an Indian digital business, a failed payment is rarely a lost customer. Instead, revenue slips away across three main failure categories:
+For an Indian digital business, a failed payment is rarely a lost customer. Instead, revenue slips away across three main failure vectors:
 
 * **Payment Gateway & Issuer Failures:** Bank outages, network timeouts, and OTP delivery delays.
 * **Checkout & Cart Drop-offs:** Authentication interruptions, payment-method confusion, and customer hesitation.
@@ -15,28 +15,20 @@ For an Indian digital business, a failed payment is rarely a lost customer. Inst
 
 ### The Operational Challenge
 
-Generic retries and aggressive messaging fail in real-world scenarios:
+Generic retries and aggressive messaging fail in production:
 * **Transient Bank Outages** need a delayed retry cool-off, not an immediate retry storm.
 * **Expired Cards or Revoked Mandates** should never receive auto-retries; they require payment-method updates.
 * **High-Value B2B Overdue Invoices** need human review or structured promise-to-pay workflows.
-* **Excessive Outreach** frustrates customers; interventions must enforce strict message caps.
+* **Excessive Outreach** frustrates customers; interventions must enforce strict communication limits.
 * **Successful Payments** must trigger an immediate halt to all ongoing recovery workflows.
 
-Unchecked payment failures lead to direct revenue loss, conversion drops, involuntary subscription churn, heavy support workloads, and poor auditability.
-
 ---
 
-## Our Solution
+## 2. End-to-End Pipeline & Failure Taxonomy
 
-The **AI Revenue Recovery Orchestrator** converts failed transactions into bounded, explainable recovery cases. It bridges the gap between failure detection and settlement using an autonomous, guardrailed loop:
+The orchestrator turns failed transactions into bounded, explainable recovery cases following a strict 8-stage sequence:
 
 $$\text{Detect} \longrightarrow \text{Diagnose} \longrightarrow \text{Score} \longrightarrow \text{Apply Guardrails} \longrightarrow \text{Intervene} \longrightarrow \text{Measure} \longrightarrow \text{Stop} \longrightarrow \text{Audit}$$
-
----
-
-## System Architecture & End-to-End Pipeline
-
-The diagram below details how failure signals, business impact, and bounded recovery actions flow through our orchestrator:
 
 ```mermaid
 graph TD
@@ -86,12 +78,9 @@ graph TD
     B_SIG --> I1
     C_SIG --> I1
 
-    A_SIG ==> R1
-    B_SIG ==> R2
-    C_SIG ==> R3
-## Orchestration Explained
+3. Orchestration Explained (backend/services/razorpay_service.py)
+The RazorpayService module serves as the execution adapter. It connects the orchestrator's decisions to live Razorpay endpoints or fallback local simulations.
 
-```mermaid
 graph TD
     %% Styling Definitions
     classDef adapter fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
@@ -147,3 +136,21 @@ graph TD
     ACT_2 --> WEBHOOK
     ACT_3 --> WEBHOOK
     ACT_4 --> WEBHOOK
+
+4. Key Execution Components
+Dual-Mode SDK Resilience: Initializes razorpay.Client if keys are detected. If keys are missing, it defaults to a mock execution adapter to allow local testing and demo simulations without throwing errors.
+
+Action Dispatching:
+
+retry_payment(): Verifies state and schedules background retries to prevent gateway retry storms.
+
+send_payment_link(): Handles currency unit conversion (rupees to paise) and interacts with Razorpay's Payment Link API.
+
+send_reminder(): Triggers customer nudges across SMS and messaging channels.
+
+escalate_human(): Hands off complex or high-value cases to manual FinOps review.
+
+Cryptographic Webhook Verification: Employs HMAC SHA-256 (hmac.compare_digest) signature validation for asynchronous event ingestion, ensuring recovery loops cease as soon as payment capture is confirmed.
+    A_SIG ==> R1
+    B_SIG ==> R2
+    C_SIG ==> R3
